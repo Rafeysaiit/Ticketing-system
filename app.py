@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 import sqlite3
 import uuid
 
-app = Flask(__name__static_folder='rafey.html', template_folder='rafey.html')
+app = Flask(__name__, static_folder='rafey.html', template_folder='rafey.html')
 CORS(app)
 
 DB_PATH = 'tickets.db'
