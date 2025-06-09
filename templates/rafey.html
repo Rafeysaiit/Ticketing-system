@@ -2,454 +2,407 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ticketing System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ticket System</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background-color: #5a9bd4;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .main-content {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    footer {
+      background-color: #f1f1f1;
+      padding: 10px 20px;
+      text-align: center;
+      font-size: 0.9em;
+      color: #333;
+      flex-shrink: 0;
     }
     table {
-      border-collapse: collapse;
       width: 100%;
-      margin-top: 20px;
+      border-collapse: collapse;
+      margin-top: 10px;
     }
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       padding: 8px;
       text-align: left;
     }
     th {
-      background-color: #eee;
+      background-color: #f4f4f4;
     }
-    #ticketModal {
+    .badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    .badge.low { background-color: green; }
+    .badge.medium { background-color: orange; }
+    .badge.high { background-color: red; }
+    .badge.open { background-color: #007bff; }
+    .badge.closed { background-color: #6c757d; }
+    .badge.in-progress { background-color: #ffc107; color: black; }
+ 
+    button {
+      padding: 7px 15px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      background-color: #007bff;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      font-size: 1em;
+    }
+    button:hover { background-color: #0056b3; }
+ 
+    .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0,0,0,0.4);
-      align-items: center;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
       justify-content: center;
-      padding: 20px;
+      align-items: center;
     }
-    #modalContent {
-      background-color: white;
+    .modal-content {
+      background: white;
       padding: 20px;
       width: 500px;
-      border-radius: 4px;
+      max-width: 90%;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #00000055;
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    label {
+    .modal-content label {
       display: block;
-      margin-top: 10px;
-      font-weight: bold;
+      margin: 10px 0 5px;
     }
-    input[type=text], input[type=date], select, textarea {
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea {
       width: 100%;
-      padding: 6px;
-      margin-top: 4px;
+      padding: 7px;
       box-sizing: border-box;
+      font-size: 1em;
     }
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-    button {
+    .modal-footer {
+      text-align: right;
       margin-top: 15px;
-      padding: 10px 15px;
-      cursor: pointer;
     }
-    #attachmentPreview {
-      margin-top: 10px;
-      max-width: 100%;
-      max-height: 150px;
-      display: block;
-    }
+    .modal-footer button { margin-left: 10px; }
   </style>
 </head>
 <body>
+  <header>ARM TICKETS</header>
 
-  <h1>Ticketing System</h1>
+  <div class="main-content">
+    <button id="addTicketBtn">Add Ticket</button>
 
-  <button onclick="openModal()">Add Ticket</button>
+    <div style="margin-bottom: 20px;">
+      <label><strong>Status :</strong></label>
+      <select id="statusFilter">
+        <option value="">All</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Closed">Closed</option>
+      </select>
 
-  <table id="ticketTable">
-    <thead>
-      <tr>
-        <th>Dashboard Name</th>
-        <th>Ticket No</th>
-        <th>Stream</th>
-        <th>Raised By</th>
-        <th>Subject</th>
-        <th>Date Logged</th>
-        <th>Closed Date</th>
-        <th>Priority</th>
-        <th>Status</th>
-        <th>Assigned To</th>
-        <th>Description</th>
-        <th>Attachment</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Ticket rows go here -->
-    </tbody>
-  </table>
+      <label style="margin-left: 20px;"><strong>Priority:</strong></label>
+      <select id="priorityFilter">
+        <option value="">All</option>
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+      </select>
+    </div>
 
-  <!-- Modal -->
-  <div id="ticketModal">
-    <div id="modalContent">
-      <h2 id="modalTitle">Add Ticket</h2>
-      <form id="ticketForm" onsubmit="return saveTicket(event)">
-        <label for="modalStream">Stream</label>
-        <select id="modalStream" required onchange="populateDashboardOptions()">
+    <table>
+      <thead>
+        <tr>
+          <th>Dashboard</th>
+          <th>Ticket No</th>
+          <th>Stream</th>
+          <th>Raised By</th>
+          <th>Subject</th>
+          <th>Date Logged</th>
+          <th>Closed Date</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Assigned To</th>
+          <th>Description</th>
+          <th>Attachment</th>
+          <th>Edit</th>
+        </tr>
+      </thead>
+      <tbody id="ticketTableBody"></tbody>
+    </table>
+  </div>
+
+  <footer>Powered by SAAIT</footer>
+
+  <div id="ticketModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalTitle">Add Ticket</h3>
+      <form id="ticketForm">
+        <label>Stream</label>
+        <select id="modalStream" required>
           <option value="">Select Stream</option>
+          <option value="HCM">HCM</option>
           <option value="Finance">Finance</option>
-          <option value="Operations">Operations</option>
-          <option value="HR">HR</option>
-          <option value="Sales">Sales</option>
-          <!-- Add other streams as needed -->
+          <option value="IT">IT</option>
+          <option value="Marketing">Marketing</option>
         </select>
 
-        <label for="modalDashboard">Dashboard Name</label>
-        <select id="modalDashboard" required>
-          <option value="">Select Dashboard</option>
-          <!-- Populated dynamically -->
+        <label>Dashboard</label>
+        <select id="modalDashboard" required></select>
+
+        <label>Ticket No.</label>
+        <input type="text" id="modalTicketNo" required readonly>
+
+        <label>Raised By</label>
+        <select id="modalRaisedBy" required>
+          <option value="">Select User</option>
+          <option value="Alice">Alice</option>
+          <option value="Bob">Bob</option>
+          <option value="Charlie">Charlie</option>
+          <option value="Diana">Diana</option>
         </select>
 
-        <label for="modalTicketNo">Ticket No</label>
-        <input type="text" id="modalTicketNo" required />
-
-        <label for="modalRaisedBy">Raised By</label>
-        <input type="text" id="modalRaisedBy" required />
-
-        <label for="modalSubject">Subject</label>
-        <select id="modalSubject" required onchange="autoSetPriority()">
+        <label>Subject</label>
+        <select id="modalSubject" required>
           <option value="">Select Subject</option>
-          <option value="Dashboard completely down">Dashboard completely down</option>
-          <option value="data breach">data breach</option>
-          <option value="Impact on CXO">Impact on CXO</option>
-          <option value="Visual issues">Visual issues</option>
-          <option value="incorrect data">incorrect data</option>
-          <option value="Enhancement requests">Enhancement requests</option>
-          <option value="UI tweaks">UI tweaks</option>
-          <option value="training queries">training queries</option>
-          <option value="Technical support">Technical support</option>
-          <option value="New dashboard Request">New dashboard Request</option>
+          <option value="Dashboard completely down, data breach, Impact on CXO">Dashboard completely down, data breach, Impact on CXO</option>
+          <option value="Visual issues incorrect data">Visual issues incorrect data</option>
+          <option value="Enhancement requests, UI tweaks training queries Technical support New dashboard Request">Enhancement requests, UI tweaks training queries Technical support New dashboard Request</option>
           <option value="Other">Other</option>
         </select>
+        <input type="text" id="customSubject" placeholder="Enter custom subject" style="display:none; margin-top:5px;"/>
 
-        <label for="modalDateLogged">Date Logged</label>
-        <input type="date" id="modalDateLogged" required />
+        <label>Date Logged</label>
+        <input type="date" id="modalDateLogged" required>
 
-        <label for="modalClosedDate">Closed Date</label>
-        <input type="date" id="modalClosedDate" disabled />
+        <label>Closed Date</label>
+        <input type="date" id="modalClosedDate" disabled>
 
-        <label for="modalPriority">Priority</label>
+        <label>Priority</label>
         <select id="modalPriority" required>
           <option value="">Select Priority</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
           <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
         </select>
 
-        <label for="modalStatus">Status</label>
-        <select id="modalStatus" required onchange="handleStatusChange()">
+        <label>Status</label>
+        <select id="modalStatus" required>
           <option value="">Select Status</option>
           <option value="Open">Open</option>
           <option value="In Progress">In Progress</option>
           <option value="Closed">Closed</option>
-          <option value="Reopened">Reopened</option>
         </select>
 
-        <label for="modalAssignedTo">Assigned To</label>
-        <input type="text" id="modalAssignedTo" readonly />
+        <label>Assigned To</label>
+        <input type="text" id="modalAssignedTo" readonly>
 
-        <label for="modalDescription">Description</label>
-        <textarea id="modalDescription"></textarea>
+        <label>Description</label>
+        <textarea id="modalDescription" rows="3" required></textarea>
 
-        <label for="modalAttachment">Attachment (Image)</label>
-        <input type="file" id="modalAttachment" accept="image/*" onchange="previewAttachment(event)" />
-        <img id="attachmentPreview" src="" alt="Attachment Preview" style="display:none;" />
+        <label>Attachment</label>
+        <input type="file" id="modalAttachment" accept="image/*">
 
-        <button type="submit">Save</button>
-        <button type="button" onclick="closeModal()">Cancel</button>
+        <div class="modal-footer">
+          <button type="button" id="modalCancelBtn">Cancel</button>
+          <button type="submit">Save</button>
+        </div>
       </form>
     </div>
   </div>
 
   <script>
-    let editingRow = null;
-    let currentAttachmentBase64 = "";
+    const TICKET_PREFIX = 'ARM';
+    let tickets = [];
+    let editingIndex = -1;
 
-    const dashboardOptions = {
-      Finance: [
-        "All",
-        "Master Matrics",
-        "MIS P&L Analytics",
-        "P&L Analytics MOM",
-        "Revenue Analysis",
-        "Revenue Analysis-BreakDown",
-        "Revenue Details Table",
-        "Revenue Waterfall Journey",
-        "Direct",
-      ],
-      Operations: [
-        "Logistics Dashboard",
-        "Operations Report",
-        "Process Improvement",
-      ],
-      HR: [
-        "Employee Dashboard",
-        "Recruitment Report",
-        "Training Overview",
-      ],
-      Sales: [
-        "Sales Performance",
-        "Customer Analytics",
-        "Sales Pipeline",
-      ],
+    const streamLeaders = {
+      HCM: 'John Doe',
+      Finance: 'Jane Smith',
+      IT: 'Robert Brown',
+      Marketing: 'Emily Davis'
     };
 
-    function openModal() {
-      document.getElementById("ticketModal").style.display = "flex";
-      document.getElementById("ticketForm").reset();
-      currentAttachmentBase64 = "";
-      editingRow = null;
-      document.getElementById("modalTicketNo").readOnly = false;
-      document.getElementById("modalDashboard").innerHTML = '<option value="">Select Dashboard</option>';
-      document.getElementById("modalTitle").textContent = "Add Ticket";
-      document.getElementById("modalClosedDate").disabled = true;
-      document.getElementById("modalAssignedTo").value = "";
-      document.getElementById("attachmentPreview").style.display = "none";
-      document.getElementById("attachmentPreview").src = "";
+    const dashboardsByStream = {
+      HCM: ['Employee Overview', 'Leave Tracker'],
+      Finance: ['Budget Analysis', 'Expense Report'],
+      IT: ['Server Status', 'Deployment Logs'],
+      Marketing: ['Campaign Tracker', 'Ad Spend Overview']
+    };
 
-      // Auto assign "Assigned To" same as Raised By when Raised By changes
-      document.getElementById("modalRaisedBy").onchange = function () {
-        document.getElementById("modalAssignedTo").value = this.value;
+    const addTicketBtn = document.getElementById('addTicketBtn');
+    const ticketModal = document.getElementById('ticketModal');
+    const ticketForm = document.getElementById('ticketForm');
+    const ticketTableBody = document.getElementById('ticketTableBody');
+
+    const modalStream = document.getElementById('modalStream');
+    const modalDashboard = document.getElementById('modalDashboard');
+    const modalTicketNo = document.getElementById('modalTicketNo');
+    const modalRaisedBy = document.getElementById('modalRaisedBy');
+    const modalSubject = document.getElementById('modalSubject');
+    const customSubject = document.getElementById('customSubject');
+    const modalDateLogged = document.getElementById('modalDateLogged');
+    const modalClosedDate = document.getElementById('modalClosedDate');
+    const modalPriority = document.getElementById('modalPriority');
+    const modalStatus = document.getElementById('modalStatus');
+    const modalAssignedTo = document.getElementById('modalAssignedTo');
+    const modalDescription = document.getElementById('modalDescription');
+    const modalAttachment = document.getElementById('modalAttachment');
+
+    const statusFilter = document.getElementById('statusFilter');
+    const priorityFilter = document.getElementById('priorityFilter');
+
+    addTicketBtn.onclick = () => {
+      editingIndex = -1;
+      ticketForm.reset();
+      customSubject.style.display = 'none';
+      modalTicketNo.value = TICKET_PREFIX + (tickets.length + 101).toString().padStart(4, '0');
+      modalDateLogged.valueAsDate = new Date();
+      modalClosedDate.disabled = true;
+      modalClosedDate.value = '';
+      modalDashboard.innerHTML = '<option value="">Select Dashboard</option>';
+      ticketModal.style.display = 'flex';
+    };
+
+    modalStream.onchange = () => {
+      modalAssignedTo.value = streamLeaders[modalStream.value] || '';
+      const dashboards = dashboardsByStream[modalStream.value] || [];
+      modalDashboard.innerHTML = '<option value="">Select Dashboard</option>' +
+        dashboards.map(d => `<option value="${d}">${d}</option>`).join('');
+    };
+
+    modalStatus.onchange = () => {
+      modalClosedDate.disabled = modalStatus.value !== 'Closed';
+      modalClosedDate.value = modalStatus.value === 'Closed' ? new Date().toISOString().slice(0,10) : '';
+    };
+
+    modalSubject.onchange = () => {
+      const val = modalSubject.value;
+      if (val === 'Other') {
+        customSubject.style.display = 'block';
+        modalPriority.value = '';
+      } else {
+        customSubject.style.display = 'none';
+        modalPriority.value = val.includes('completely down') ? 'High' :
+                              val.includes('Visual') ? 'Medium' : 'Low';
+      }
+    };
+
+    document.getElementById('modalCancelBtn').onclick = () => ticketModal.style.display = 'none';
+
+    ticketForm.onsubmit = async e => {
+      e.preventDefault();
+      const subject = modalSubject.value === 'Other' ? customSubject.value.trim() : modalSubject.value;
+      let attachment = '';
+      const file = modalAttachment.files[0];
+      if (file) attachment = await toBase64(file);
+
+      const newTicket = {
+        dashboard: modalDashboard.value,
+        ticketNo: modalTicketNo.value,
+        stream: modalStream.value,
+        raisedBy: modalRaisedBy.value,
+        subject,
+        dateLogged: modalDateLogged.value,
+        closedDate: modalClosedDate.value,
+        priority: modalPriority.value,
+        status: modalStatus.value,
+        assignedTo: modalAssignedTo.value,
+        description: modalDescription.value.trim(),
+        attachment
       };
-    }
+      if (editingIndex === -1) tickets.push(newTicket);
+      else tickets[editingIndex] = newTicket;
+      renderTickets();
+      ticketModal.style.display = 'none';
+    };
 
-    function closeModal() {
-      document.getElementById("ticketModal").style.display = "none";
-    }
-
-    function populateDashboardOptions() {
-      const stream = document.getElementById("modalStream").value;
-      const dashboardSelect = document.getElementById("modalDashboard");
-      dashboardSelect.innerHTML = '<option value="">Select Dashboard</option>';
-      if (dashboardOptions[stream]) {
-        dashboardOptions[stream].forEach((dash) => {
-          const option = document.createElement("option");
-          option.value = dash;
-          option.textContent = dash;
-          dashboardSelect.appendChild(option);
-        });
-      }
-    }
-
-    function autoSetPriority() {
-      const subject = document.getElementById("modalSubject").value;
-      const prioritySelect = document.getElementById("modalPriority");
-      if (
-        subject === "Dashboard completely down" ||
-        subject === "data breach" ||
-        subject === "Impact on CXO"
-      ) {
-        prioritySelect.value = "High";
-      } else if (
-        subject === "Visual issues" ||
-        subject === "incorrect data"
-      ) {
-        prioritySelect.value = "Medium";
-      } else if (
-        subject === "Enhancement requests" ||
-        subject === "UI tweaks" ||
-        subject === "training queries" ||
-        subject === "Technical support" ||
-        subject === "New dashboard Request" ||
-        subject === "Other"
-      ) {
-        prioritySelect.value = "Low";
-      } else {
-        prioritySelect.value = "";
-      }
-    }
-
-    function handleStatusChange() {
-      const status = document.getElementById("modalStatus").value;
-      const closedDateInput = document.getElementById("modalClosedDate");
-
-      if (status === "Closed") {
-        closedDateInput.disabled = false;
-        if (!closedDateInput.value) {
-          const today = new Date().toISOString().split("T")[0];
-          closedDateInput.value = today;
-        }
-      } else {
-        closedDateInput.value = "";
-        closedDateInput.disabled = true;
-      }
-    }
-
-    function previewAttachment(event) {
-      const file = event.target.files[0];
-      if (file) {
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = function (e) {
-          currentAttachmentBase64 = e.target.result;
-          const preview = document.getElementById("attachmentPreview");
-          preview.src = currentAttachmentBase64;
-          preview.style.display = "block";
-        };
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
         reader.readAsDataURL(file);
-      } else {
-        currentAttachmentBase64 = "";
-        const preview = document.getElementById("attachmentPreview");
-        preview.src = "";
-        preview.style.display = "none";
-      }
+      });
     }
 
-    function saveTicket(event) {
-      event.preventDefault();
+    function renderTickets() {
+      const statusVal = statusFilter.value;
+      const priorityVal = priorityFilter.value;
 
-      const stream = document.getElementById("modalStream").value.trim();
-      const dashboard = document.getElementById("modalDashboard").value.trim();
-      const ticketNo = document.getElementById("modalTicketNo").value.trim();
-      const raisedBy = document.getElementById("modalRaisedBy").value.trim();
-      const subject = document.getElementById("modalSubject").value.trim();
-      const dateLogged = document.getElementById("modalDateLogged").value;
-      const closedDate = document.getElementById("modalClosedDate").value;
-      const priority = document.getElementById("modalPriority").value;
-      const status = document.getElementById("modalStatus").value;
-      const assignedTo = document.getElementById("modalAssignedTo").value.trim();
-      const description = document.getElementById("modalDescription").value.trim();
-
-      if (!stream || !dashboard || !ticketNo || !raisedBy || !subject || !dateLogged || !priority || !status) {
-        alert("Please fill all required fields.");
-        return false;
-      }
-
-      // If adding new ticket, check if ticketNo already exists
-      if (!editingRow) {
-        const existingRow = Array.from(document.querySelectorAll("#ticketTable tbody tr")).find(row => row.cells[1].innerText === ticketNo);
-        if (existingRow) {
-          alert("Ticket No already exists.");
-          return false;
-        }
-      }
-
-      const tbody = document.querySelector("#ticketTable tbody");
-
-      if (editingRow) {
-        // Update existing row
-        const cells = editingRow.cells;
-        cells[0].innerText = dashboard;
-        cells[1].innerText = ticketNo;
-        cells[2].innerText = stream;
-        cells[3].innerText = raisedBy;
-        cells[4].innerText = subject;
-        cells[5].innerText = dateLogged;
-        cells[6].innerText = closedDate;
-        cells[7].innerText = priority;
-        cells[8].innerText = status;
-        cells[9].innerText = assignedTo;
-        cells[10].innerText = description;
-
-        // Update attachment
-        const img = cells[11].querySelector("img");
-        if (currentAttachmentBase64) {
-          if (img) {
-            img.src = currentAttachmentBase64;
-          } else {
-            const newImg = document.createElement("img");
-            newImg.src = currentAttachmentBase64;
-            newImg.style.maxWidth = "100px";
-            newImg.style.maxHeight = "80px";
-            cells[11].appendChild(newImg);
-          }
-        } else {
-          if (img) {
-            img.remove();
-          }
-        }
-
-      } else {
-        // Add new row
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>${dashboard}</td>
-          <td>${ticketNo}</td>
-          <td>${stream}</td>
-          <td>${raisedBy}</td>
-          <td>${subject}</td>
-          <td>${dateLogged}</td>
-          <td>${closedDate}</td>
-          <td>${priority}</td>
-          <td>${status}</td>
-          <td>${assignedTo}</td>
-          <td>${description}</td>
-          <td></td>
-          <td><button type="button" onclick="editRow(this)">Edit</button></td>
-        `;
-
-        if (currentAttachmentBase64) {
-          const img = document.createElement("img");
-          img.src = currentAttachmentBase64;
-          img.style.maxWidth = "100px";
-          img.style.maxHeight = "80px";
-          tr.cells[11].appendChild(img);
-        }
-
-        tbody.appendChild(tr);
-      }
-
-      closeModal();
-      return false;
+      ticketTableBody.innerHTML = '';
+      tickets
+        .filter(t => (!statusVal || t.status === statusVal) && (!priorityVal || t.priority === priorityVal))
+        .forEach((t, i) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${t.dashboard}</td>
+            <td>${t.ticketNo}</td>
+            <td>${t.stream}</td>
+            <td>${t.raisedBy}</td>
+            <td>${t.subject}</td>
+            <td>${t.dateLogged}</td>
+            <td>${t.closedDate || ''}</td>
+            <td><span class="badge ${t.priority.toLowerCase()}">${t.priority}</span></td>
+            <td><span class="badge ${t.status.toLowerCase().replace(' ', '-')}">${t.status}</span></td>
+            <td>${t.assignedTo}</td>
+            <td>${t.description}</td>
+            <td>${t.attachment ? `<img src="${t.attachment}" style="max-width:100px;">` : ''}</td>
+            <td><button onclick="editTicket(${i})">Edit</button></td>`;
+          ticketTableBody.appendChild(row);
+        });
     }
 
-    function editRow(button) {
-      editingRow = button.closest("tr");
-      const cells = editingRow.querySelectorAll("td");
-
-      document.getElementById("modalTitle").textContent = "Edit Ticket";
-
-      document.getElementById("modalStream").value = cells[2].innerText;
-      populateDashboardOptions();
-      document.getElementById("modalDashboard").value = cells[0].innerText;
-      document.getElementById("modalTicketNo").value = cells[1].innerText;
-      document.getElementById("modalTicketNo").readOnly = true;
-      document.getElementById("modalRaisedBy").value = cells[3].innerText;
-      document.getElementById("modalSubject").value = cells[4].innerText;
-      document.getElementById("modalDateLogged").value = cells[5].innerText;
-      document.getElementById("modalClosedDate").value = cells[6].innerText;
-      document.getElementById("modalPriority").value = cells[7].innerText.trim();
-      document.getElementById("modalStatus").value = cells[8].innerText;
-      document.getElementById("modalAssignedTo").value = cells[9].innerText;
-      document.getElementById("modalDescription").value = cells[10].innerText;
-
-      currentAttachmentBase64 = cells[11].querySelector("img")?.src || "";
-
-      const preview = document.getElementById("attachmentPreview");
-      if (currentAttachmentBase64) {
-        preview.src = currentAttachmentBase64;
-        preview.style.display = "block";
-      } else {
-        preview.src = "";
-        preview.style.display = "none";
-      }
-
-      handleStatusChange();
-
-      // On edit, disable Assigned To input so it stays readonly
-      document.getElementById("modalAssignedTo").readOnly = true;
-
-      // Remove auto assign on Raised By change (not applicable on edit)
-      document.getElementById("modalRaisedBy").onchange = null;
-
-      document.getElementById("ticketModal").style.display = "flex";
+    function editTicket(index) {
+      const t = tickets[index];
+      editingIndex = index;
+      modalStream.value = t.stream;
+      modalStream.dispatchEvent(new Event('change'));
+      modalDashboard.value = t.dashboard;
+      modalTicketNo.value = t.ticketNo;
+      modalRaisedBy.value = t.raisedBy;
+      modalSubject.value = ['Dashboard completely down, data breach, Impact on CXO', 'Visual issues incorrect data', 'Enhancement requests, UI tweaks training queries Technical support New dashboard Request'].includes(t.subject) ? t.subject : 'Other';
+      customSubject.style.display = modalSubject.value === 'Other' ? 'block' : 'none';
+      customSubject.value = modalSubject.value === 'Other' ? t.subject : '';
+      modalDateLogged.value = t.dateLogged;
+      modalClosedDate.disabled = t.status !== 'Closed';
+      modalClosedDate.value = t.closedDate;
+      modalPriority.value = t.priority;
+      modalStatus.value = t.status;
+      modalAssignedTo.value = t.assignedTo;
+      modalDescription.value = t.description;
+      ticketModal.style.display = 'flex';
     }
+
+    window.onclick = e => { if (e.target === ticketModal) ticketModal.style.display = 'none'; };
+    statusFilter.onchange = priorityFilter.onchange = renderTickets;
   </script>
-
 </body>
 </html>
