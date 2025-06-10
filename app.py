@@ -5,10 +5,14 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
+
+# Ensure 'uploads' folder exists to store database and files
+os.makedirs('uploads', exist_ok=True)
+
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
-DB_PATH = 'tickets.db'
+DB_PATH = os.path.join('uploads', 'tickets.db')
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -18,27 +22,28 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tickets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            dashboard TEXT,
-            ticket_no TEXT,
-            stream TEXT,
-            raised_by TEXT,
-            subject TEXT,
-            date_logged DATE,
-            closed_date DATE,
-            priority TEXT,
-            status TEXT,
-            assigned_to TEXT,
-            description TEXT,
-            attachment TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    if not os.path.exists(DB_PATH):
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_no TEXT,
+                dashboard TEXT,
+                stream TEXT,
+                raised_by TEXT,
+                subject TEXT,
+                date_logged TEXT,
+                closed_date TEXT,
+                priority TEXT,
+                status TEXT,
+                assigned_to TEXT,
+                description TEXT,
+                attachment TEXT
+            )
+        ''')
+        conn.commit()
+        conn.close()
 
 @app.route("/")
 def home():
@@ -142,7 +147,7 @@ def get_tickets():
         cur = conn.cursor()
         cur.execute('''
             SELECT id, dashboard, ticket_no, stream, raised_by, subject, date_logged,
-                   closed_date, priority, status, assigned_to, description, attachment
+            closed_date, priority, status, assigned_to, description, attachment
             FROM tickets ORDER BY 
                 CASE status
                     WHEN 'Open' THEN 1
