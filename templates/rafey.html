@@ -239,29 +239,28 @@
   </div>
 
   <script>
+    let editingRow = null;
+  
     const TICKET_PREFIX = 'ARM';
-    let tickets = [];
-    let editingIndex = -1;
-
+  
     const streamLeaders = {
       HCM: 'John Doe',
       Finance: 'Jane Smith',
       IT: 'Robert Brown',
       Marketing: 'Emily Davis'
     };
-
+  
     const dashboardsByStream = {
       HCM: ['Employee Overview', 'Leave Tracker'],
       Finance: ['Budget Analysis', 'Expense Report'],
       IT: ['Server Status', 'Deployment Logs'],
       Marketing: ['Campaign Tracker', 'Ad Spend Overview']
     };
-
-    const addTicketBtn = document.getElementById('addTicketBtn');
+  
     const ticketModal = document.getElementById('ticketModal');
     const ticketForm = document.getElementById('ticketForm');
     const ticketTableBody = document.getElementById('ticketTableBody');
-
+  
     const modalStream = document.getElementById('modalStream');
     const modalDashboard = document.getElementById('modalDashboard');
     const modalTicketNo = document.getElementById('modalTicketNo');
@@ -275,34 +274,91 @@
     const modalAssignedTo = document.getElementById('modalAssignedTo');
     const modalDescription = document.getElementById('modalDescription');
     const modalAttachment = document.getElementById('modalAttachment');
-
+    const addTicketBtn = document.getElementById('addTicketBtn');
+  
     const statusFilter = document.getElementById('statusFilter');
     const priorityFilter = document.getElementById('priorityFilter');
-
+  
+    async function loadTickets() {
+      const res = await fetch("/get_tickets");
+      const tickets = await res.json();
+      renderTickets(tickets);
+    }
+  
+    function renderTickets(tickets) {
+      const statusVal = statusFilter.value;
+      const priorityVal = priorityFilter.value;
+      ticketTableBody.innerHTML = '';
+      tickets
+        .filter(t => (!statusVal || t.status === statusVal) && (!priorityVal || t.priority === priorityVal))
+        .forEach(t => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${t.dashboard}</td>
+            <td>${t.ticket_no}</td>
+            <td>${t.stream}</td>
+            <td>${t.raised_by}</td>
+            <td>${t.subject}</td>
+            <td>${t.date_logged}</td>
+            <td>${t.closed_date || ''}</td>
+            <td><span class="badge ${t.priority.toLowerCase()}">${t.priority}</span></td>
+            <td><span class="badge ${t.status.toLowerCase().replace(' ', '-')}">${t.status}</span></td>
+            <td>${t.assigned_to}</td>
+            <td>${t.description}</td>
+            <td>${t.attachment ? `<a href="${t.attachment}" target="_blank">View</a>` : ''}</td>
+            <td><button onclick='editTicket(${JSON.stringify(t)})'>Edit</button></td>`;
+          ticketTableBody.appendChild(row);
+        });
+    }
+  
+    function editTicket(ticket) {
+      editingRow = ticket;
+      modalStream.value = ticket.stream;
+      modalStream.dispatchEvent(new Event('change'));
+      modalDashboard.value = ticket.dashboard;
+      modalTicketNo.value = ticket.ticket_no;
+      modalRaisedBy.value = ticket.raised_by;
+      const knownSubjects = [
+        "Dashboard completely down, data breach, Impact on CXO",
+        "Visual issues incorrect data",
+        "Enhancement requests, UI tweaks training queries Technical support New dashboard Request"
+      ];
+      modalSubject.value = knownSubjects.includes(ticket.subject) ? ticket.subject : "Other";
+      customSubject.style.display = modalSubject.value === "Other" ? "block" : "none";
+      customSubject.value = modalSubject.value === "Other" ? ticket.subject : "";
+      modalDateLogged.value = ticket.date_logged;
+      modalClosedDate.disabled = ticket.status !== "Closed";
+      modalClosedDate.value = ticket.closed_date || '';
+      modalPriority.value = ticket.priority;
+      modalStatus.value = ticket.status;
+      modalAssignedTo.value = ticket.assigned_to;
+      modalDescription.value = ticket.description;
+      ticketModal.style.display = 'flex';
+    }
+  
     addTicketBtn.onclick = () => {
-      editingIndex = -1;
+      editingRow = null;
       ticketForm.reset();
       customSubject.style.display = 'none';
-      modalTicketNo.value = TICKET_PREFIX + (tickets.length + 101).toString().padStart(4, '0');
+      modalTicketNo.value = '';
       modalDateLogged.valueAsDate = new Date();
       modalClosedDate.disabled = true;
-      modalClosedDate.value = '';
       modalDashboard.innerHTML = '<option value="">Select Dashboard</option>';
       ticketModal.style.display = 'flex';
     };
-
+  
     modalStream.onchange = () => {
       modalAssignedTo.value = streamLeaders[modalStream.value] || '';
       const dashboards = dashboardsByStream[modalStream.value] || [];
       modalDashboard.innerHTML = '<option value="">Select Dashboard</option>' +
         dashboards.map(d => `<option value="${d}">${d}</option>`).join('');
     };
-
+  
     modalStatus.onchange = () => {
       modalClosedDate.disabled = modalStatus.value !== 'Closed';
       modalClosedDate.value = modalStatus.value === 'Closed' ? new Date().toISOString().slice(0,10) : '';
     };
-
+  
     modalSubject.onchange = () => {
       const val = modalSubject.value;
       if (val === 'Other') {
@@ -314,95 +370,53 @@
                               val.includes('Visual') ? 'Medium' : 'Low';
       }
     };
-
-    document.getElementById('modalCancelBtn').onclick = () => ticketModal.style.display = 'none';
-
-    ticketForm.onsubmit = async e => {
+  
+    ticketForm.onsubmit = async (e) => {
       e.preventDefault();
       const subject = modalSubject.value === 'Other' ? customSubject.value.trim() : modalSubject.value;
-      let attachment = '';
-      const file = modalAttachment.files[0];
-      if (file) attachment = await toBase64(file);
-
-      const newTicket = {
-        dashboard: modalDashboard.value,
-        ticketNo: modalTicketNo.value,
-        stream: modalStream.value,
-        raisedBy: modalRaisedBy.value,
-        subject,
-        dateLogged: modalDateLogged.value,
-        closedDate: modalClosedDate.value,
-        priority: modalPriority.value,
-        status: modalStatus.value,
-        assignedTo: modalAssignedTo.value,
-        description: modalDescription.value.trim(),
-        attachment
-      };
-      if (editingIndex === -1) tickets.push(newTicket);
-      else tickets[editingIndex] = newTicket;
-      renderTickets();
-      ticketModal.style.display = 'none';
-    };
-
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append("dashboard", modalDashboard.value);
+      formData.append("ticket_no", modalTicketNo.value);
+      formData.append("stream", modalStream.value);
+      formData.append("raised_by", modalRaisedBy.value);
+      formData.append("subject", subject);
+      formData.append("date_logged", modalDateLogged.value);
+      formData.append("closed_date", modalClosedDate.value);
+      formData.append("priority", modalPriority.value);
+      formData.append("status", modalStatus.value);
+      formData.append("assigned_to", modalAssignedTo.value);
+      formData.append("description", modalDescription.value.trim());
+      if (modalAttachment.files.length > 0) {
+        formData.append("attachment", modalAttachment.files[0]);
+      }
+  
+      let endpoint = "/add_ticket";
+      if (editingRow && editingRow.id) {
+        formData.append("id", editingRow.id);
+        endpoint = "/update_ticket";
+      }
+  
+      await fetch(endpoint, {
+        method: "POST",
+        body: formData
       });
-    }
-
-    function renderTickets() {
-      const statusVal = statusFilter.value;
-      const priorityVal = priorityFilter.value;
-
-      ticketTableBody.innerHTML = '';
-      tickets
-        .filter(t => (!statusVal || t.status === statusVal) && (!priorityVal || t.priority === priorityVal))
-        .forEach((t, i) => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${t.dashboard}</td>
-            <td>${t.ticketNo}</td>
-            <td>${t.stream}</td>
-            <td>${t.raisedBy}</td>
-            <td>${t.subject}</td>
-            <td>${t.dateLogged}</td>
-            <td>${t.closedDate || ''}</td>
-            <td><span class="badge ${t.priority.toLowerCase()}">${t.priority}</span></td>
-            <td><span class="badge ${t.status.toLowerCase().replace(' ', '-')}">${t.status}</span></td>
-            <td>${t.assignedTo}</td>
-            <td>${t.description}</td>
-            <td>${t.attachment ? `<img src="${t.attachment}" style="max-width:100px;">` : ''}</td>
-            <td><button onclick="editTicket(${i})">Edit</button></td>`;
-          ticketTableBody.appendChild(row);
-        });
-    }
-
-    function editTicket(index) {
-      const t = tickets[index];
-      editingIndex = index;
-      modalStream.value = t.stream;
-      modalStream.dispatchEvent(new Event('change'));
-      modalDashboard.value = t.dashboard;
-      modalTicketNo.value = t.ticketNo;
-      modalRaisedBy.value = t.raisedBy;
-      modalSubject.value = ['Dashboard completely down, data breach, Impact on CXO', 'Visual issues incorrect data', 'Enhancement requests, UI tweaks training queries Technical support New dashboard Request'].includes(t.subject) ? t.subject : 'Other';
-      customSubject.style.display = modalSubject.value === 'Other' ? 'block' : 'none';
-      customSubject.value = modalSubject.value === 'Other' ? t.subject : '';
-      modalDateLogged.value = t.dateLogged;
-      modalClosedDate.disabled = t.status !== 'Closed';
-      modalClosedDate.value = t.closedDate;
-      modalPriority.value = t.priority;
-      modalStatus.value = t.status;
-      modalAssignedTo.value = t.assignedTo;
-      modalDescription.value = t.description;
-      ticketModal.style.display = 'flex';
-    }
-
-    window.onclick = e => { if (e.target === ticketModal) ticketModal.style.display = 'none'; };
-    statusFilter.onchange = priorityFilter.onchange = renderTickets;
+  
+      ticketModal.style.display = "none";
+      loadTickets();
+    };
+  
+    document.getElementById("modalCancelBtn").onclick = () => {
+      ticketModal.style.display = "none";
+    };
+  
+    window.onclick = e => {
+      if (e.target === ticketModal) ticketModal.style.display = 'none';
+    };
+  
+    statusFilter.onchange = priorityFilter.onchange = loadTickets;
+  
+    loadTickets();
   </script>
+  
 </body>
 </html>
