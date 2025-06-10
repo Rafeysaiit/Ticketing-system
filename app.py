@@ -22,28 +22,27 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def init_db():
-    if not os.path.exists(DB_PATH):
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS tickets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ticket_no TEXT,
-                dashboard TEXT,
-                stream TEXT,
-                raised_by TEXT,
-                subject TEXT,
-                date_logged TEXT,
-                closed_date TEXT,
-                priority TEXT,
-                status TEXT,
-                assigned_to TEXT,
-                description TEXT,
-                attachment TEXT
-            )
-        ''')
-        conn.commit()
-        conn.close()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tickets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_no TEXT,
+            dashboard TEXT,
+            stream TEXT,
+            raised_by TEXT,
+            subject TEXT,
+            date_logged TEXT,
+            closed_date TEXT,
+            priority TEXT,
+            status TEXT,
+            assigned_to TEXT,
+            description TEXT,
+            attachment TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
 @app.route("/")
 def home():
