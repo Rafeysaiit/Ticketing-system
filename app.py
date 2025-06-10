@@ -143,7 +143,14 @@ def get_tickets():
         cur.execute('''
             SELECT id, dashboard, ticket_no, stream, raised_by, subject, date_logged,
                    closed_date, priority, status, assigned_to, description, attachment
-            FROM tickets ORDER BY id DESC
+            FROM tickets ORDER BY 
+                CASE status
+                    WHEN 'Open' THEN 1
+                    WHEN 'In Progress' THEN 2
+                    WHEN 'Closed' THEN 3
+                    ELSE 4
+                END,
+                id DESC
         ''')
         rows = cur.fetchall()
         conn.close()
