@@ -14,36 +14,57 @@
       overflow: hidden;
     }
     header {
-      background-color: #5a9bd4;
+      position: relative;
+      background-color: #010b13;
       color: white;
-      padding: 10px 20px;
-      font-size: 1.2em;
       font-weight: bold;
+      height: 60px;
+      display: flex;
+      justify-content: center; /* center the title horizontally */
+      align-items: center;
+      font-size: 1.0em;
+      padding: 0 20px;
+    }
+    .header-logo {
+      position: absolute;
+      right: 20px;
+      height: 30px;
+      width: auto;
+    }
+    .header-title {
+      /* Centered by flexbox in header */
+    }
+    footer {
+      background-color: #f1f1f1;
+      color: #333;
+      font-size: 0.9em;
       text-align: center;
-      flex-shrink: 0;
+      padding: 0px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-logo {
+      height: 20px;
+      width: auto;
     }
     .main-content {
       flex-grow: 1;
       padding: 20px;
       overflow-y: auto;
     }
-    footer {
-      background-color: #f1f1f1;
-      padding: 10px 20px;
-      text-align: center;
-      font-size: 0.9em;
-      color: #333;
-      flex-shrink: 0;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
+      font-size: 0.85rem; /* smaller font for table text */
+      text-align: center; /* center all table cells */
     }
     th, td {
       border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
+      padding: 6px 8px;
+      text-align: center; /* center text in table */
     }
     th {
       background-color: #f4f4f4;
@@ -55,7 +76,7 @@
       font-weight: bold;
       font-size: 0.9em;
     }
-    .badge.low { background-color: green; }
+    .badge.low { background-color: red; } /* changed green to red as you requested */
     .badge.medium { background-color: orange; }
     .badge.high { background-color: red; }
     .badge.open { background-color: #007bff; }
@@ -66,7 +87,7 @@
       padding: 7px 15px;
       margin-bottom: 10px;
       cursor: pointer;
-      background-color: #007bff;
+      background-color: #020d19;
       border: none;
       border-radius: 4px;
       color: white;
@@ -93,6 +114,7 @@
       box-shadow: 0 0 10px #00000055;
       max-height: 90vh;
       overflow-y: auto;
+      font-size: 0.9rem; /* smaller font */
     }
     .modal-content label {
       display: block;
@@ -104,7 +126,7 @@
       width: 100%;
       padding: 7px;
       box-sizing: border-box;
-      font-size: 1em;
+      font-size: 0.9rem;
     }
     .modal-footer {
       text-align: right;
@@ -134,9 +156,13 @@
   </style>
 </head>
 <body>
-  <header>ARM TICKETS</header>
+  <header>
+    <img src="FINAL LOGO SAAIT 2.png" alt="Logo" class="header-logo" style="width: 60px; height: 60px;" />
+    <div class="header-title">SAAIT TICKETING SYSTEM</div>
+  </header>
   <div class="main-content">
     <button id="addTicketBtn">Add Ticket</button>
+
     <div style="margin-bottom: 20px;">
       <label><strong>Status :</strong></label>
       <select id="statusFilter">
@@ -145,6 +171,7 @@
         <option value="In Progress">In Progress</option>
         <option value="Closed">Closed</option>
       </select>
+    
       <label style="margin-left: 20px;"><strong>Priority:</strong></label>
       <select id="priorityFilter">
         <option value="">All</option>
@@ -152,7 +179,16 @@
         <option value="Medium">Medium</option>
         <option value="High">High</option>
       </select>
-    </div>
+    
+      <label style="margin-left: 20px;"><strong>Stream :</strong></label>
+      <select id="streamFilter">
+        <option value="">All</option>
+        <option value="HCM">HCM</option>
+        <option value="Finance">Finance</option>
+        <option value="IT">IT</option>
+        <option value="Marketing">Marketing</option>
+      </select>
+    </div>    
     <table>
       <thead>
         <tr>
@@ -174,7 +210,6 @@
       <tbody id="ticketTableBody"></tbody>
     </table>
   </div>
-  <footer>Powered by SAAIT</footer>
 
   <!-- Ticket Modal -->
   <div id="ticketModal" class="modal">
@@ -319,9 +354,10 @@
     function renderTickets(tickets) {
       const statusVal = statusFilter.value;
       const priorityVal = priorityFilter.value;
+      const streamVal = streamFilter.value;
       ticketTableBody.innerHTML = '';
       tickets
-        .filter(t => (!statusVal || t.status === statusVal) && (!priorityVal || t.priority === priorityVal))
+        .filter(t => (!statusVal || t.status === statusVal) && (!priorityVal || t.priority === priorityVal) && (!streamVal || t.stream === streamVal))
         .forEach(t => {
           const row = document.createElement('tr');
           row.innerHTML = `
@@ -374,6 +410,7 @@
   modalTicketNo.value = '';
   modalDateLogged.value = new Date().toISOString().slice(0, 10);
       modalClosedDate.disabled = true;
+      modalStatus.value = 'Open';
       modalDashboard.innerHTML = '<option value="">Select Dashboard</option>';
       ticketModal.style.display = 'flex';
     };
@@ -462,6 +499,7 @@
     });
 
     statusFilter.onchange = priorityFilter.onchange = loadTickets;
+    streamFilter.onchange = loadTickets;
 
     loadTickets();
   </script>
