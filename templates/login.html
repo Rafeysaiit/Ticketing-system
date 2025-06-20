@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('Final LOGO SAAIT.png') no-repeat top center fixed;
+      background-size: contain;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .login-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 280px;
+      z-index: 2;
+    }
+
+    h2 {
+      text-align: center;
+      color: #020d19;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 6px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+    }
+
+    .button-wrapper {
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    button {
+      width: 65%;
+      padding: 6px;
+      background: #020d19;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #003366;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+      font-size: 0.85em;
+      min-height: 1.2em;
+    }
+
+    .forgot-password {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .forgot-password a {
+      color: #003366;
+      text-decoration: none;
+      font-size: 0.8em;
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Login</h2>
+    <div id="errorMsg" class="error"></div>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <div class="button-wrapper">
+        <button type="submit">Login</button>
+      </div>
+    </form>
+    <div class="forgot-password">
+      <a href="#" onclick="forgotPassword()">Forgot Password?</a>
+    </div>
+  </div>
+
+  <script>
+    // Handle form submission
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
+
+      try {
+        const response = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          sessionStorage.setItem("loggedIn", "true");
+          window.location.href = "/rafey.html";
+        } else {
+          errorMsg.textContent = "Invalid username or password";
+        }
+      } catch (error) {
+        console.error("Login failed:", error);
+        errorMsg.textContent = "Error logging in. Try again later.";
+      }
+    });
+
+    function forgotPassword() {
+      const user = document.getElementById('username').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+
+      if (!user) {
+        alert("Please enter your username so we can send the reset link.");
+        return;
+      }
+
+      if (user.toLowerCase() === 'admin') {
+        alert('A password reset link has been sent to rafey@saait.co');
+      } else {
+        errorMsg.textContent = 'Username not recognized for password reset.';
+      }
+    }
+  </script>
+
+</body>
+</html>
